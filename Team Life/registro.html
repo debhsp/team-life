@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Registro Team Life</title>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+<style>
+
+body{
+font-family:Arial;
+background:#111827;
+display:flex;
+justify-content:center;
+align-items:center;
+height:100vh;
+}
+
+.card{
+background:white;
+padding:30px;
+border-radius:15px;
+width:350px;
+}
+
+input{
+width:100%;
+padding:12px;
+margin-top:10px;
+border:1px solid #ccc;
+border-radius:10px;
+}
+
+button{
+width:100%;
+padding:12px;
+margin-top:15px;
+border:none;
+background:#7F6BFF;
+color:white;
+border-radius:10px;
+cursor:pointer;
+font-weight:bold;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="card">
+
+<h2>Registro</h2>
+
+<input type="number" id="phone" placeholder="Número celular">
+
+<input type="password" id="password" placeholder="Contraseña">
+
+<button onclick="registrar()">
+Registrarse
+</button>
+
+</div>
+
+<script>
+
+const firebaseConfig = {
+
+apiKey: "AIzaSyC4eUC10DiYSAbd_ktuZ1XQIYS1xPz2SiM",
+
+authDomain: "team-life-1d28c.firebaseapp.com",
+
+projectId: "team-life-1d28c",
+
+storageBucket: "team-life-1d28c.firebasestorage.app",
+
+messagingSenderId: "61252498580",
+
+appId: "1:61252498580:web:121a4aea2fd6236613b081",
+
+measurementId: "G-82KVWG8QKS"
+
+};
+
+firebase.initializeApp(firebaseConfig);
+
+const auth = firebase.auth();
+
+const db = firebase.firestore();
+
+async function registrar(){
+
+let phone =
+document.getElementById("phone").value;
+
+let password =
+document.getElementById("password").value;
+
+if(!phone || !password){
+
+alert("Completa los campos");
+return;
+
+}
+
+try{
+
+let email =
+phone + "@gmail.com";
+
+const userCredential =
+await auth.createUserWithEmailAndPassword(email,password);
+
+const user =
+userCredential.user;
+
+/* GUARDAR EN FIRESTORE */
+
+await db.collection("users")
+.doc(user.uid)
+.set({
+
+phone: phone,
+email: email,
+role: "vendedor",
+createdAt: new Date()
+
+});
+
+alert("Usuario registrado");
+
+window.location.href =
+"login.html";
+
+}catch(error){
+
+alert(error.message);
+
+console.log(error);
+
+}
+
+}
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,43 @@
+/index.html
+/login.html
+/registro.html
+/panel_admin.html
+/vendedor.html
+/tienda.html
+
+/assets
+│
+├── /css
+│   ├── global.css
+│   ├── auth.css
+│   ├── admin.css
+│   ├── vendedor.css
+│   └── tienda.css
+│
+├── /js
+│   │
+│   ├── firebase.js
+│   │
+│   ├── /models
+│   │   ├── authModel.js
+│   │   ├── userModel.js
+│   │   └── productModel.js
+│   │
+│   ├── /controllers
+│   │   ├── authController.js
+│   │   ├── adminController.js
+│   │   ├── vendedorController.js
+│   │   └── tiendaController.js
+│   │
+│   ├── /views
+│   │   ├── authView.js
+│   │   ├── adminView.js
+│   │   ├── vendedorView.js
+│   │   └── tiendaView.js
+│   │
+│   └── /helpers
+│       ├── alerts.js
+│       ├── loader.js
+│       └── validators.js
+│
+└── /img

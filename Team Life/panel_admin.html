@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Panel - Team Life</title>
+
+<!-- FIREBASE -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
+
+<style>
+body{
+margin:0;
+font-family:Arial;
+background:#0f172a;
+color:white;
+overflow-x:hidden;
+}
+
+.watermark{
+position:fixed;
+top:50%;
+left:50%;
+transform:translate(-50%,-50%);
+width:500px;
+opacity:0.05;
+z-index:0;
+pointer-events:none;
+}
+
+.header{
+background:#1e1b4b;
+padding:15px;
+display:flex;
+justify-content:space-between;
+align-items:center;
+}
+
+.sidebar{
+position:fixed;
+top:60px;
+left:0;
+bottom:0;
+width:220px;
+background:#111827;
+padding:10px;
+}
+
+.sidebar a{
+display:block;
+padding:10px;
+color:white;
+cursor:pointer;
+}
+
+.content{
+margin-left:220px;
+padding:20px;
+}
+
+.section{display:none;}
+.active{display:block;}
+
+input,button{
+padding:10px;
+margin:5px;
+border-radius:6px;
+border:none;
+}
+
+button{cursor:pointer;}
+</style>
+</head>
+
+<body>
+
+<!-- WATERMARK -->
+<img class="watermark" src="img/logo.png">
+
+<!-- HEADER -->
+<div class="header">
+<h3>Panel Admin</h3>
+<button onclick="logout()">Salir</button>
+</div>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+<a onclick="show('dashboard')">Dashboard</a>
+<a onclick="show('usuarios')">Usuarios</a>
+<a onclick="show('productos')">Productos</a>
+<a onclick="show('pedidos')">Pedidos</a>
+</div>
+
+<!-- CONTENT -->
+<div class="content">
+
+<!-- DASHBOARD -->
+<div id="dashboard" class="section active">
+<h2>Dashboard</h2>
+<p>Productos: <span id="tp">0</span></p>
+<p>Usuarios: <span id="tu">0</span></p>
+<p>Pedidos: <span id="tpe">0</span></p>
+</div>
+
+<!-- USUARIOS -->
+<div id="usuarios" class="section">
+<h2>Usuarios</h2>
+<div id="listaUsuarios"></div>
+</div>
+
+<!-- PRODUCTOS -->
+<div id="productos" class="section">
+<h2>Productos</h2>
+
+<input id="nombre" placeholder="Nombre">
+<input id="precio" type="number" placeholder="Precio">
+<input id="desc" placeholder="Descripción">
+<input type="file" id="img">
+
+<button onclick="crearProducto()">Crear</button>
+
+<div id="listaProductos"></div>
+</div>
+
+<!-- PEDIDOS -->
+<div id="pedidos" class="section">
+<h2>Pedidos</h2>
+<div id="listaPedidos"></div>
+</div>
+
+</div>
+
+<script>
+
+// FIREBASE CONFIG
+firebase.initializeApp({
+apiKey:"TU_KEY",
+authDomain:"TU_DOMAIN",
+projectId:"TU_ID",
+storageBucket:"TU_BUCKET"
+});
+
+const auth = firebase.auth();
+const db = firebase.firestore();
+const storage = firebase.storage();
+
+// ADMIN CHECK
+auth.onAuthStateChanged(async user=>{
+if(!user){
+location.href="login.html";
+return;
+}
+
+const doc = await db.collection("users").doc(user.uid).get();
+
+if(!doc.exists || doc.data().role !== "admin"){
+alert("No autorizado");
+location.href="login.html";
+return;
+}
+
+load();
+});
+
+// NAV
+function show(id){
+document.querySelectorAll(".section").forEach(e=>e.classList.remove("active"));
+document.getElementById(id).classList.add("active");
+}
+
+// DASHBOARD
+async function load(){
+const p = await db.collection("productos").get();
+const u = await db.collection("users").get();
+const pe = await db.collection("pedidos").get();
+
+document.getElementById("tp").innerText = p.size;
+document.getElementById("tu").innerText = u.size;
+document.getElementById("tpe").innerText = pe.size;
+
+loadUsers();
+loadProducts();
+loadOrders();
+}
+
+// USERS
+function loadUsers(){
+db.collection("users").onSnapshot(snap=>{
+let html="";
+snap.forEach(d=>{
+let u=d.data();
+html+=`
+<p>${u.email} - ${u.role}
+<button onclick="makeSeller('${d.id}')">Vendedor</button>
+<button onclick="blockUser('${d.id}')">Bloquear</button>
+</p>`;
+});
+document.getElementById("listaUsuarios").innerHTML=html;
+});
+}
+
+function makeSeller(id){
+db.collection("users").doc(id).update({role:"vendedor"});
+}
+
+function blockUser(id){
+db.collection("users").doc(id).update({role:"bloqueado"});
+}
+
+// PRODUCTS + IMAGE UPLOAD
+async function crearProducto(){
+
+const nombre = document.getElementById("nombre").value;
+const precio = document.getElementById("precio").value;
+const desc = document.getElementById("desc").value;
+const file = document.getElementById("img").files[0];
+
+const ref = storage.ref("productos/"+file.name);
+await ref.put(file);
+const url = await ref.getDownloadURL();
+
+await db.collection("productos").add({
+nombre,precio,desc,imagen:url
+});
+
+alert("Producto creado");
+}
+
+// LIST PRODUCTS
+function loadProducts(){
+db.collection("productos").onSnapshot(snap=>{
+let html="";
+snap.forEach(d=>{
+let p=d.data();
+html+=`
+<p>
+<img src="${p.imagen}" width="50">
+${p.nombre} - Bs ${p.precio}
+</p>`;
+});
+document.getElementById("listaProductos").innerHTML=html;
+});
+}
+
+// ORDERS
+function loadOrders(){
+db.collection("pedidos").onSnapshot(snap=>{
+let html="";
+snap.forEach(d=>{
+let p=d.data();
+html+=`
+<p>${p.producto} - ${p.estado || "pendiente"}</p>`;
+});
+document.getElementById("listaPedidos").innerHTML=html;
+});
+}
+
+// LOGOUT
+function logout(){
+auth.signOut();
+location.href="login.html";
+}
+
+</script>
+
+</body>
+</html>
